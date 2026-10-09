@@ -49,4 +49,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 
+# tooling
+.vscode
+
 downloaded_images

@@ -35,6 +35,7 @@ model Customer {
   wishlistItems        WishlistItem[]
   cartItems            CartItem[]
   bulkOrderInquiries   BulkOrderInquiry[]
+  CartAbandonedNotification CartAbandonedNotification[]
 }
 
 model MediaAsset {
@@ -415,6 +416,7 @@ model OrderRequest {
   shipmentPushedAt     DateTime?
   customer             Customer?          @relation(fields: [customerId], references: [id])
   items                OrderRequestItem[]
+  notifications        NotificationLog[]
 
   @@index([shipmentStatus])
 }
@@ -572,6 +574,99 @@ model Story {
   perfume3    Product     @relation("StoryPerfume3", fields: [perfume3Id], references: [id])
 
   @@index([status, launchDate])
+}
+
+///////////////////////////////// Notifications /////////////////////////////////
+model NotificationLog {
+  id           String              @id @default(cuid())
+  subjectId    String
+  channel      NotificationChannel
+  type         NotificationType
+  recipient    String
+  providerId   String?
+  variant      String              @default("")
+  status       NotificationStatus  @default(PENDING)
+  errorMessage String?
+  sentAt       DateTime            @default(now())
+
+  orderId String?
+  order   OrderRequest? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@unique([subjectId, channel, type, variant])
+  @@index([subjectId])
+  @@index([orderId])
+  @@index([recipient])
+  @@index([channel, sentAt])
+}
+
+enum NotificationChannel {
+  EMAIL
+  WHATSAPP
+  SMS
+}
+
+enum NotificationType {
+  // Order
+  ORDER_CONFIRMATION
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+
+  // Shipment lifecycle — one type per stage
+  SHIPMENT_PICKED_UP
+  SHIPMENT_IN_TRANSIT
+  SHIPMENT_OUT_FOR_DELIVERY
+  SHIPMENT_DELIVERED
+  SHIPMENT_RTO
+  SHIPMENT_FAILED
+
+  // Waitlist / account
+  WELCOME
+  WAITLIST_RESTOCK
+  INQUIRY_RECEIVED
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+
+// For now we are storing customer in the notifications table.
+// In the future we will have cartId in the table and we will have a relation with the cart table. 
+// For now we are storing customerId in the table and we will have a relation with the customer table.
+model CartAbandonedNotification {
+  id String @id @default(uuid())
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  type    AbandonedCartNotificationType
+  status  NotificationStatus            @default(PENDING)
+  channel NotificationChannel
+
+  scheduledAt DateTime
+  sentAt      DateTime?
+
+  attemptCount  Int       @default(0)
+  lastAttemptAt DateTime?
+  errorMessage  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+  @@unique([customerId, type])
+  @@index([status, scheduledAt])
+}
+
+enum AbandonedCartNotificationType {
+  REMINDER_1
+  REMINDER_2
+  REMINDER_3
 }
 
 enum AdminRole {

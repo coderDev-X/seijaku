@@ -1,0 +1,11 @@
+import { env } from "../../config.js";
+
+export const BREVO_TEMPLATES = {
+  ORDER_CONFIRMATION: env.BREVO_TPL_ORDER_CONFIRMATION,
+  PAYMENT_SUCCESS   : env.BREVO_TPL_PAYMENT_SUCCESS,
+  PAYMENT_FAILED    : env.BREVO_TPL_PAYMENT_FAILED,
+  SHIPMENT_UPDATE   : env.BREVO_TPL_SHIPMENT_UPDATE,
+  ABANDONED_CART    : env.BREVO_TPL_ABANDONED_CART,
+} as const;
+
+export type BrevoTemplateKey = keyof typeof BREVO_TEMPLATES;
